@@ -67,10 +67,10 @@ CMD ["/service.sh"]
 
 DOCKERCOMPOSE = '''version: '2'
 services:
- pwn_deploy_chroot:
-   image: pwn_deploy_chroot:latest
+ pwn_deploy:
+   image: pwn_deploy:latest
    build: .
-   container_name: pwn_deploy_chroot
+   container_name: pwn_deploy
    ports:
     %s
 '''
