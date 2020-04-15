@@ -8,10 +8,10 @@
 # Whether to replace /bin/sh
 REPLACE_BINSH = False
 
-FLAG_BAK_FILENAME = "flags.txt"
-PORT_INFO_FILENAME = "ports.txt"
+FLAG_BAK_FILENAME = "./copyfile/flags.txt"
+PORT_INFO_FILENAME = "./copyfile/ports.txt"
 PWN_BIN_PATH = "./bin"
-XINETD_CONF_FILENAME = "pwn.xinetd"
+XINETD_CONF_FILENAME = "./copyfile/pwn.xinetd"
 PORT_LISTEN_START_FROM = 10000
 
 XINETD = '''service ctf
@@ -25,7 +25,7 @@ XINETD = '''service ctf
     port        = %d
     bind        = 0.0.0.0
     server      = /usr/sbin/chroot   
-    server_args = --userspec=%s /home/%s ./%s
+    server_args = --userspec=%s /home/%s ./run.sh %s
     # safety options
     per_source  = 10 # the maximum instances of this service per source IP address
     rlimit_cpu  = 20 # the maximum number of CPU seconds that the service may use
@@ -37,12 +37,14 @@ XINETD = '''service ctf
 
 DOCKERFILE = '''FROM ubuntu:16.04
 
+MAINTAINER Bandit
+
 RUN sed -i 's/archive.ubuntu.com/asia-east1.gce.archive.ubuntu.com/g' /etc/apt/sources.list && apt update && apt-get install -y lib32z1 xinetd && rm -rf /var/lib/apt/lists/ && rm -rf /root/.cache && apt-get autoclean && rm -rf /tmp/* /var/lib/apt/* /var/cache/* /var/log/*
 #apt update && apt-get install -y lib32z1 xinetd && rm -rf /var/lib/apt/lists/ && rm -rf /root/.cache && apt-get autoclean && rm -rf /tmp/* /var/lib/apt/* /var/cache/* /var/log/*
 
 COPY ./'''+ XINETD_CONF_FILENAME +''' /etc/xinetd.d/pwn
 
-COPY ./service.sh /service.sh
+COPY ./copyfile/service.sh /service.sh
 
 RUN chmod +x /service.sh
 
@@ -50,6 +52,9 @@ RUN chmod +x /service.sh
 %s
 
 # copy bin
+%s
+
+# creat run.sh
 %s
 
 # chown & chmod

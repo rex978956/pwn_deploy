@@ -1,9 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# @Date    : 2018-09-17 14:32:32
-# @Author  : giantbranch (giantbranch@gmail.com)
-# @Link    : http://www.giantbranch.cn/
-# @tags : 
 
 from config import *
 import os
@@ -32,7 +28,10 @@ def generateFlags(filelist):
     tmp_flag = ""
     contentBefore = []
     if not os.path.exists(FLAG_BAK_FILENAME):
-        os.popen("touch " + FLAG_BAK_FILENAME)
+      with open(FLAG_BAK_FILENAME, 'a'):
+        os.utime(FLAG_BAK_FILENAME, None)
+        # os.popen("touch " + FLAG_BAK_FILENAME)
+        # print("touch" + FLAG_BAK_FILENAME)
 
     with open(FLAG_BAK_FILENAME, 'r') as f:
         while 1:
@@ -51,7 +50,7 @@ def generateFlags(filelist):
             flag_dict = {}
             ret = isExistBeforeGetFlagAndPort(filename, contentBefore)
             if ret == False:
-                tmp_flag = "flag{" + str(uuid.uuid4()) + "}"
+                tmp_flag = "Hackfun{" + str(uuid.uuid4()).replace('-', '') + "}"
                 flag_dict["port"] = port
                 port = port + 1
             else:
@@ -61,7 +60,7 @@ def generateFlags(filelist):
             flag_dict["filename"] = filename
             flag_dict["flag"] = tmp_flag
             flag_json = json.dumps(flag_dict)
-            print flag_json
+            print (flag_json)
             f.write(flag_json + "\n")
             flags.append(tmp_flag)
     return flags
@@ -91,59 +90,59 @@ def generateDockerfile(filelist, flags):
     for filename in filelist:
         runcmd += "useradd -m " + filename + " && "
    
-    for x in xrange(0, len(filelist)):
+    for x in range(0, len(filelist)):
         if x == len(filelist) - 1:
             runcmd += "echo '" + flags[x] + "' > /home/" + filelist[x] + "/flag.txt" 
         else:
             runcmd += "echo '" + flags[x] + "' > /home/" + filelist[x] + "/flag.txt" + " && "
-    # print runcmd 
 
     # copy bin
     copybin = ""
     for filename in filelist:
         copybin += "COPY " + PWN_BIN_PATH + "/" + filename  + " /home/" + filename + "/" + filename + "\n"
         if REPLACE_BINSH:
-            copybin += "COPY ./catflag" + " /home/" + filename + "/bin/sh\n"
-        else:
-            copybin += "COPY ./catflag" + " /home/" + filename + "/bin/sh\n"
+            copybin += "COPY ./copyfile/catflag" + " /home/" + filename + "/bin/sh\n"
+        else :
+            copybin += "COPY ./copyfile/catflag" + " /home/" + filename + "/bin/sh\n"
 
-    # print copybin
-
+    # copy run.sh
+    copyrun=""
+    for filename in filelist:
+        copyrun += "COPY " + "./copyfile/run.sh" + " /home/" + filename + "/" + "run.sh" + "\n"
+    
     # chown & chmod
     chown_chmod = "RUN "
-    for x in xrange(0, len(filelist)):
+    for x in range(0, len(filelist)):
         chown_chmod += "chown -R root:" + filelist[x] + " /home/" + filelist[x] + " && "
         chown_chmod += "chmod -R 750 /home/" + filelist[x] + " && "
+        chown_chmod += "chmod -R 750 /home/" + filelist[x] + "/run.sh" + " && "
         if x == len(filelist) - 1:
             chown_chmod += "chmod 740 /home/" + filelist[x] + "/flag.txt"
         else:
             chown_chmod += "chmod 740 /home/" + filelist[x] + "/flag.txt" + " && "
-    # print chown_chmod
+    
 
     # copy lib,/bin 
-    # dev = '''mkdir /home/%s/dev && mknod /home/%s/dev/null c 1 3 && mknod /home/%s/dev/zero c 1 5 && mknod /home/%s/dev/random c 1 8 && mknod /home/%s/dev/urandom c 1 9 && chmod 666 /home/%s/dev/* && '''
     dev = '''mkdir /home/%s/dev && mknod /home/%s/dev/null c 1 3 && mknod /home/%s/dev/zero c 1 5 && mknod /home/%s/dev/random c 1 8 && mknod /home/%s/dev/urandom c 1 9 && chmod 666 /home/%s/dev/* '''
     if not REPLACE_BINSH:
-        # ness_bin = '''mkdir /home/%s/bin && cp /bin/sh /home/%s/bin && cp /bin/ls /home/%s/bin && cp /bin/cat /home/%s/bin'''
-        ness_bin = '''&& cp /bin/sh /home/%s/bin && cp /bin/ls /home/%s/bin && cp /bin/cat /home/%s/bin'''
+        ness_bin = '''&& cp /bin/sh /home/%s/bin && cp /bin/ls /home/%s/bin && cp /bin/cat /home/%s/bin && cp /usr/bin/timeout /home/%s/bin '''
     copy_lib_bin_dev = "RUN "
-    for x in xrange(0, len(filelist)):
+    for x in range(0, len(filelist)):
         copy_lib_bin_dev += "cp -R /lib* /home/" + filelist[x]  + " && "
         copy_lib_bin_dev += "cp -R /usr/lib* /home/" + filelist[x]  + " && "
         copy_lib_bin_dev += dev % (filelist[x], filelist[x], filelist[x], filelist[x], filelist[x], filelist[x])
         if x == len(filelist) - 1:
             if not REPLACE_BINSH:
-                copy_lib_bin_dev += ness_bin % (filelist[x], filelist[x], filelist[x])
+                copy_lib_bin_dev += ness_bin % (filelist[x], filelist[x], filelist[x], filelist[x])
             pass                
         else: 
             if not REPLACE_BINSH:   
-                copy_lib_bin_dev += ness_bin % (filelist[x], filelist[x], filelist[x]) + " && "
+                copy_lib_bin_dev += ness_bin % (filelist[x], filelist[x], filelist[x], filelist[x]) + " && "
             else:
                 copy_lib_bin_dev += " && "
 
-    # print copy_lib_bin_dev
 
-    conf = DOCKERFILE % (runcmd, copybin, chown_chmod, copy_lib_bin_dev)
+    conf = DOCKERFILE % (runcmd, copybin, copyrun, chown_chmod, copy_lib_bin_dev)
 
     with open("Dockerfile", 'w') as f:
         f.write(conf)
@@ -152,7 +151,7 @@ def generateDockerCompose(length):
     conf = ""
     ports = ""
     port = PORT_LISTEN_START_FROM
-    for x in xrange(0,length):
+    for x in range(0,length):
         ports += "- " + str(port) + ":" + str(port) + "\n    "
         port = port + 1
 
@@ -177,6 +176,3 @@ flags = generateFlags(filelist)
 generateXinetd(filelist)
 generateDockerfile(filelist, flags)
 generateDockerCompose(len(filelist))
-
-
-
