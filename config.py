@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# @Date    : 2018-09-17 14:01:13
-# @Author  : giantbranch (giantbranch@gmail.com)
-# @Link    : http://www.giantbranch.cn/
-# @tags : 
+# @Date    : 2018-04-16 01:51:32
+# @Author  : bandit
+# fork by giantbranch
 
 # Whether to replace /bin/sh
 REPLACE_BINSH = False
@@ -35,7 +34,7 @@ XINETD = '''service ctf
 
 '''
 
-DOCKERFILE = '''FROM ubuntu:16.04
+DOCKERFILE = '''FROM ubuntu
 
 MAINTAINER Bandit
 
